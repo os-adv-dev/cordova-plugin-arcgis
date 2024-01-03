@@ -1,0 +1,33 @@
+repositories {
+    google()
+    mavenCentral()
+    maven {
+        url 'https://esri.jfrog.io/artifactory/arcgis'
+    }
+    maven { 
+      url 'https://jitpack.io'
+   }
+}
+
+android {
+    buildFeatures {
+        viewBinding true
+    }
+
+    packagingOptions {
+        resources {
+            excludes += 'META-INF/DEPENDENCIES'
+        }
+    }
+}
+
+dependencies {
+   // ArcGIS dependency
+   implementation 'com.esri:arcgis-maps-kotlin:200.3.0'
+   implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+   implementation 'androidx.databinding:databinding-runtime:4.1.0'
+    // lib dependencies from rootProject build.gradle
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.1"
+    implementation "com.google.android.material:material:1.7.0"
+    implementation "commons-io:commons-io:2.11.0"
+}

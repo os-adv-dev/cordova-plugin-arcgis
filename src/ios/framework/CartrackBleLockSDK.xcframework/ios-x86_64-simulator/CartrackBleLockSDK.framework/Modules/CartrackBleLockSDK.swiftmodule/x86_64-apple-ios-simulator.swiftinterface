@@ -1,0 +1,161 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 5.2.4 (swiftlang-1103.0.32.9 clang-1103.0.32.53)
+// swift-module-flags: -target x86_64-apple-ios11.0-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -module-name CartrackBleLockSDK
+@_exported import CartrackBleLockSDK
+import CommonCrypto
+import CoreBluetooth
+import Foundation
+import Security
+import Swift
+import UIKit
+public enum BleSignalStrength {
+  case unknown
+  case strong
+  case good
+  case weak
+  public static func == (a: CartrackBleLockSDK.BleSignalStrength, b: CartrackBleLockSDK.BleSignalStrength) -> Swift.Bool
+  public var hashValue: Swift.Int {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+}
+public protocol BleTerminalDelegate : AnyObject {
+  func bleTerminalDidGetKey(terminal: CartrackBleLockSDK.BleTerminal, error: CartrackBleLockSDK.BleKeyError?)
+  func bleTerminalDidConnect(terminal: CartrackBleLockSDK.BleTerminal, error: CartrackBleLockSDK.BleConnectionError?)
+  func bleTerminalDidAction(terminal: CartrackBleLockSDK.BleTerminal, action: CartrackBleLockSDK.BleAction, error: CartrackBleLockSDK.BleActionError?)
+  func bleTerminalDisconnected(terminal: CartrackBleLockSDK.BleTerminal)
+  func bleTerminalSignalUpdate(rssi: Swift.Int, strength: CartrackBleLockSDK.BleSignalStrength)
+}
+public enum BleConnectionState {
+  case disconnected
+  case connecting
+  case connected
+  public static func == (a: CartrackBleLockSDK.BleConnectionState, b: CartrackBleLockSDK.BleConnectionState) -> Swift.Bool
+  public var hashValue: Swift.Int {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+}
+public enum BleAction {
+  case lock
+  case unlock
+  case headlight
+  case horn
+  case lockState
+  public static func == (a: CartrackBleLockSDK.BleAction, b: CartrackBleLockSDK.BleAction) -> Swift.Bool
+  public var hashValue: Swift.Int {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+}
+public enum LockState {
+  case unknown
+  case locked
+  case unlocked
+  public static func == (a: CartrackBleLockSDK.LockState, b: CartrackBleLockSDK.LockState) -> Swift.Bool
+  public var hashValue: Swift.Int {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+}
+@_hasMissingDesignatedInitializers public class BleTerminal {
+  weak public var delegate: CartrackBleLockSDK.BleTerminalDelegate?
+  public var hasKey: Swift.Bool {
+    get
+  }
+  public var connectionState: CartrackBleLockSDK.BleConnectionState {
+    get
+  }
+  public var signalStrength: CartrackBleLockSDK.BleSignalStrength {
+    get
+  }
+  public var terminalID: Swift.String {
+    get
+  }
+  public var lockState: CartrackBleLockSDK.LockState {
+    get
+  }
+  public func getAuthKey()
+  public func removeAuthKey()
+  public func connect(timeout: Swift.Float = 10.0)
+  public func disconnect()
+  public func sendAction(_ action: CartrackBleLockSDK.BleAction)
+  @objc deinit
+}
+public enum BleConnectionError : Swift.Int, Swift.Error, Foundation.CustomNSError {
+  case keyNotFound
+  case keyInvalid
+  case bluetoohUnauthorized
+  case bluetoothDisabled
+  case bluetoohUnsupported
+  case terminalNotFound
+  case terminalConnectFailed
+  public static var errorDomain: Swift.String
+  public var errorCode: Swift.Int {
+    get
+  }
+  public var localizedDescription: Swift.String {
+    get
+  }
+  public typealias RawValue = Swift.Int
+  public init?(rawValue: Swift.Int)
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+public enum BleActionError : Swift.Int, Swift.Error, Foundation.CustomNSError {
+  case notConnected
+  case lockFailed
+  case unlockFailed
+  case actionFailed
+  public static var errorDomain: Swift.String
+  public var errorCode: Swift.Int {
+    get
+  }
+  public var localizedDescription: Swift.String {
+    get
+  }
+  public typealias RawValue = Swift.Int
+  public init?(rawValue: Swift.Int)
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+public enum BleKeyError : Swift.Int, Swift.Error, Foundation.CustomNSError {
+  case invalidVendorCredential
+  case keyNotFound
+  case noConnection
+  public var errorCode: Swift.Int {
+    get
+  }
+  public var localizedDescription: Swift.String {
+    get
+  }
+  public typealias RawValue = Swift.Int
+  public init?(rawValue: Swift.Int)
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+@_hasMissingDesignatedInitializers public class BleService {
+  public static func configure(vendorID: Swift.String, apiKey: Swift.String)
+  public static func getTerminal(terminalID: Swift.String) -> CartrackBleLockSDK.BleTerminal
+  @objc deinit
+}
+extension CartrackBleLockSDK.BleSignalStrength : Swift.Equatable {}
+extension CartrackBleLockSDK.BleSignalStrength : Swift.Hashable {}
+extension CartrackBleLockSDK.BleConnectionState : Swift.Equatable {}
+extension CartrackBleLockSDK.BleConnectionState : Swift.Hashable {}
+extension CartrackBleLockSDK.BleAction : Swift.Equatable {}
+extension CartrackBleLockSDK.BleAction : Swift.Hashable {}
+extension CartrackBleLockSDK.LockState : Swift.Equatable {}
+extension CartrackBleLockSDK.LockState : Swift.Hashable {}
+extension CartrackBleLockSDK.BleConnectionError : Swift.Equatable {}
+extension CartrackBleLockSDK.BleConnectionError : Swift.Hashable {}
+extension CartrackBleLockSDK.BleConnectionError : Swift.RawRepresentable {}
+extension CartrackBleLockSDK.BleActionError : Swift.Equatable {}
+extension CartrackBleLockSDK.BleActionError : Swift.Hashable {}
+extension CartrackBleLockSDK.BleActionError : Swift.RawRepresentable {}
+extension CartrackBleLockSDK.BleKeyError : Swift.Equatable {}
+extension CartrackBleLockSDK.BleKeyError : Swift.Hashable {}
+extension CartrackBleLockSDK.BleKeyError : Swift.RawRepresentable {}

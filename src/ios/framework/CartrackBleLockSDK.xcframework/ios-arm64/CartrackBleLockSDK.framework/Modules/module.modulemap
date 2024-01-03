@@ -1,0 +1,11 @@
+framework module CartrackBleLockSDK {
+  umbrella header "CartrackBleLockSDK.h"
+
+  export *
+  module * { export * }
+}
+
+module CartrackBleLockSDK.Swift {
+    header "CartrackBleLockSDK-Swift.h"
+    requires objc
+}

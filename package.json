@@ -1,0 +1,14 @@
+{
+  "name": "ArcGISPlugin",
+  "version": "1.0.0",
+  "description": "",
+  "cordova": {
+    "id": "com.outsystems.experts.arcgis",
+    "platforms": []
+  },
+  "keywords": [
+    "ecosystem:cordova"
+  ],
+  "author": "Paulo Cesar Camilo",
+  "license": "ISC"
+}

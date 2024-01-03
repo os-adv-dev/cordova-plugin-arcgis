@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin id="com.outsystems.experts.arcgis" version="1.0.0"
+    xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <name>ArcGIS Plugin</name>
+    
+    <js-module name="ArcGISPlugin" src="www/ArcGISPlugin.js">
+        <clobbers target="cordova.plugins.ArcGISPlugin"/>
+    </js-module>
+
+    <platform name="android">
+
+        <hook type="after_plugin_install" src="src/android/hooks/modifyGradle.js" />
+        <hook type="before_build" src="src/android/hooks/updateKotlinVersion.js" />
+        
+        <config-file parent="/*" target="res/xml/config.xml">
+            
+            <feature name="ArcGISPlugin">
+                <param name="android-package" value="com.outsystems.experts.arcgis.ArcGISPlugin" />
+            </feature>
+
+        </config-file>
+
+        <!-- Copy files Kotlin -->
+		<source-file src="src/android/ArcGISPlugin.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/arcgis" />
+         
+         <!-- SDK Files -->
+        <framework src="src/android/arcgis.gradle" custom="true" type="gradleReference" />
+        <!-- END SDK Files -->
+
+        <config-file target="res/xml/config.xml" parent="/*">
+			<preference name="GradlePluginKotlinVersion" value="1.9.20" />
+			<preference name="GradlePluginKotlinEnabled" value="true" />
+            <preference name="GradlePluginKotlinCodeStyle" value="official" />
+            <preference name="AndroidXEnabled" value="true"/>
+        </config-file>
+
+         <!-- Edit AndroidManifest.xml -->
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+        </config-file>
+        <!-- END Edit AndroidManifest.xml -->
+          
+    </platform>
+</plugin>
