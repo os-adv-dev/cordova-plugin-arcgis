@@ -11,6 +11,9 @@
 
     <platform name="android">
 
+        <!-- Set the API KEY variable -->
+        <preference name="API_KEY"/>
+
         <hook type="after_plugin_install" src="src/android/hooks/modifyGradle.js" />
         <hook type="before_build" src="src/android/hooks/updateKotlinVersion.js" />
         
@@ -24,8 +27,11 @@
 
         <!-- Copy files Kotlin -->
 		<source-file src="src/android/ArcGISPlugin.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/arcgis" />
-         
-         <!-- SDK Files -->
+        <source-file src="src/android/MapActivity.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/arcgis" />
+        <resource-file src="src/android/layout/activity_map.xml" target="res/layout/activity_map.xml" />
+        <!-- End copy files -->
+
+        <!-- SDK Files -->
         <framework src="src/android/arcgis.gradle" custom="true" type="gradleReference" />
         <!-- END SDK Files -->
 
@@ -43,6 +49,20 @@
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
         </config-file>
         <!-- END Edit AndroidManifest.xml -->
-          
+        
+         <!-- Variables -->
+       <config-file target="res/values/strings.xml" parent="/*">
+            <string name="app_api_key">$API_KEY</string>
+        </config-file>
+        <!-- End Variables -->
+
+        <!-- Regigter Activity -->
+         <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <activity
+                android:theme="@style/Theme.AppCompat.NoActionBar"
+                android:name="com.outsystems.experts.arcgis.MapActivity" />
+        </config-file>
+        <!-- End register Activity -->
+
     </platform>
 </plugin>

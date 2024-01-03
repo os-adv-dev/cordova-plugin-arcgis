@@ -1,5 +1,6 @@
 package com.outsystems.experts.arcgis
 
+import android.content.Intent
 import org.apache.cordova.CallbackContext
 import org.apache.cordova.CordovaInterface
 import org.apache.cordova.CordovaPlugin
@@ -28,6 +29,7 @@ class ArcGISPlugin : CordovaPlugin() {
 
     private fun prepareShowMaps(callbackContext: CallbackContext) {
         try {
+            cordova.activity.startActivity(Intent(this.cordova.context, MapActivity::class.java))
             callbackContext.success()
         } catch (ex: Exception) {
             callbackContext.error(ex.message)
