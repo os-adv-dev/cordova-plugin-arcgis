@@ -3,11 +3,144 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".MainActivity">
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/containerTop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        android:background="#ffff"
+        android:elevation="4dp"
+        android:padding="16dp">
+
+        <ImageView
+            android:id="@+id/ivBack"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_back"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"/>
+
+        <TextView
+            android:id="@+id/titleScreen"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:gravity="center"
+            android:textSize="18sp"
+            android:textColor="#000"
+            android:fontFamily="@font/poppins_regular"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:text="Draw the area"/>
+
+        <TextView
+            android:id="@+id/tvCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="normal"
+            android:textSize="15sp"
+            android:textColor="#0D8187"
+            android:fontFamily="@font/poppins_regular"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:text="Cancel"/>
+
+            <RadioGroup
+                android:id="@+id/radioGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="20dp"
+                android:layout_marginStart="6dp"
+                android:layout_marginEnd="6dp"
+                app:layout_constraintTop_toBottomOf="@+id/titleScreen">
+
+                <RadioButton
+                    android:id="@+id/radioPolygon"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:button="@null"
+                    android:drawableTop="@drawable/ic_polygon"/>
+
+                <RadioButton
+                    android:id="@+id/radioCircle"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:drawableTop="@drawable/ic_circle"
+                    android:button="@null"/>
+
+                <RadioButton
+                    android:id="@+id/radioLine"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:drawableTop="@drawable/ic_line"
+                    android:button="@null"/>
+
+            </RadioGroup>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <com.arcgismaps.mapping.view.MapView
-         android:id="@+id/mapView"
-         android:layout_width="match_parent"
-         android:layout_height="match_parent" />
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideLine"
+        android:layout_width="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.5"
+        android:layout_height="wrap_content"/>
+
+    <ImageView
+        android:id="@+id/recenterMap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_recenter"
+        android:backgroundTint="#fff"
+        android:elevation="4dp"
+        app:layout_constraintBottom_toTopOf="@+id/btnUndo"
+        app:layout_constraintEnd_toEndOf="@+id/btnSave"
+        android:layout_marginBottom="24dp"/>
+
+    <Button
+        android:id="@+id/btnUndo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_button_redo"
+        android:layout_marginBottom="28dp"
+        android:contentDescription="@null"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/ic_button_redo"
+        app:layout_constraintEnd_toStartOf="@+id/guideLine"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <Button
+        android:id="@+id/btnSave"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_btn_save"
+        android:layout_marginBottom="28dp"
+        android:contentDescription="@null"
+        android:layout_marginStart="12dp"
+        android:background="@drawable/ic_btn_save"
+        app:layout_constraintStart_toEndOf="@+id/guideLine"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -29,7 +29,22 @@
 		<source-file src="src/android/ArcGISPlugin.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/arcgis" />
         <source-file src="src/android/MapActivity.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/arcgis" />
         <resource-file src="src/android/layout/activity_map.xml" target="res/layout/activity_map.xml" />
-        <!-- End copy files -->
+
+        <resource-file src="src/android/font/poppins_regular.ttf" target="res/font/poppins_regular.ttf" />
+
+        <resource-file src="src/android/icons/ic_back.xml" target="res/drawable/ic_back.xml" />
+        <resource-file src="src/android/icons/ic_btn_save.xml" target="res/drawable/ic_btn_save.xml" />
+        <resource-file src="src/android/icons/ic_button_redo.xml" target="res/drawable/ic_button_redo.xml" />
+        <resource-file src="src/android/icons/ic_circle_selected.xml" target="res/drawable/ic_circle_selected.xml" />
+        <resource-file src="src/android/icons/ic_circle.xml" target="res/drawable/ic_circle.xml" />
+        <resource-file src="src/android/icons/ic_line.xml" target="res/drawable/ic_line.xml" />
+        <resource-file src="src/android/icons/ic_line_selected.xml" target="res/drawable/ic_line_selected.xml" />
+        <resource-file src="src/android/icons/ic_polygon.xml" target="res/drawable/ic_polygon.xml" />
+        <resource-file src="src/android/icons/ic_polygon_selected.xml" target="res/drawable/ic_polygon_selected.xml" />
+        <resource-file src="src/android/icons/ic_recenter.xml" target="res/drawable/ic_recenter.xml" />
+        <resource-file src="src/android/icons/ic_close_map.xml" target="res/drawable/ic_close_map.xml" />
+
+        <!-- end copy filed -->
 
         <!-- SDK Files -->
         <framework src="src/android/arcgis.gradle" custom="true" type="gradleReference" />
@@ -47,12 +62,18 @@
             <uses-permission android:name="android.permission.INTERNET" />
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
         </config-file>
         <!-- END Edit AndroidManifest.xml -->
         
          <!-- Variables -->
        <config-file target="res/values/strings.xml" parent="/*">
             <string name="app_api_key">$API_KEY</string>
+            <string name="invalid_polyline_message">Polyline only valid if it contains at least one part of 2 or more vertices.</string>
+            <string name="invalid_polygon_message">Polygon only valid if it contains at least one part of 3 or more vertices which form a closed ring.</string>
+            <string name="none_selected_message">No option selected to draw in map</string>
+            <string name="restart_message">Cleared all graphics from map</string>
         </config-file>
         <!-- End Variables -->
 

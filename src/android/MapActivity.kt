@@ -4,24 +4,87 @@ import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.arcgismaps.ApiKey
 import com.arcgismaps.ArcGISEnvironment
+import com.arcgismaps.geometry.*
 import com.arcgismaps.location.LocationDisplayAutoPanMode
 import com.arcgismaps.mapping.ArcGISMap
 import com.arcgismaps.mapping.BasemapStyle
+import com.arcgismaps.mapping.Viewpoint
+import com.arcgismaps.mapping.symbology.*
+import com.arcgismaps.mapping.view.Graphic
+import com.arcgismaps.mapping.view.GraphicsOverlay
 import com.arcgismaps.mapping.view.MapView
+import com.arcgismaps.mapping.view.geometryeditor.FreehandTool
+import com.arcgismaps.mapping.view.geometryeditor.GeometryEditor
+import com.arcgismaps.mapping.view.geometryeditor.VertexTool
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
+import java.util.*
 
 class MapActivity : AppCompatActivity() {
 
     private lateinit var mapView: MapView
+    private lateinit var recenterMap: ImageView
+    private lateinit var tvCancel: View
+    private lateinit var ivBack: View
+    private lateinit var radioGroup: RadioGroup
+    private lateinit var radioPolygon: RadioButton
+    private lateinit var radioCircle: RadioButton
+    private lateinit var radioLine: RadioButton
+    private lateinit var btnUndo: Button
+    private lateinit var btnSave: Button
+
+    // create a symbol for a line graphic
+    private val lineSymbol: SimpleLineSymbol by lazy {
+        SimpleLineSymbol(
+            SimpleLineSymbolStyle.Solid,
+            com.arcgismaps.Color(Color.parseColor("#FE8700")),
+            4f
+        )
+    }
+
+    // create a symbol for the fill graphic
+    private val fillSymbol: SimpleFillSymbol by lazy {
+        SimpleFillSymbol(
+            SimpleFillSymbolStyle.Cross,
+            com.arcgismaps.Color(Color.parseColor("#6DFE8700")),
+            lineSymbol
+        )
+    }
+
+    // create a symbol for the point graphic
+    private val pointSymbol: SimpleMarkerSymbol by lazy {
+        SimpleMarkerSymbol(
+            SimpleMarkerSymbolStyle.Square,
+            com.arcgismaps.Color(Color.parseColor("#FE8700")),
+            20f
+        )
+    }
+
+    // keep the instance graphic overlay to add graphics on the map
+    private var graphicsOverlay: GraphicsOverlay = GraphicsOverlay()
+
+    // keep the instance of the freehand tool
+    private val freehandTool: FreehandTool = FreehandTool()
+
+    // keep the instance of the vertex tool
+    private val vertexTool: VertexTool = VertexTool()
+
+    // keep the instance to create new geometries, and change existing geometries
+    private var geometryEditor: GeometryEditor = GeometryEditor()
 
     @SuppressLint("DiscouragedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,11 +92,11 @@ class MapActivity : AppCompatActivity() {
 
         val layoutResourceId = getResourceId("activity_map", "layout")
         setContentView(layoutResourceId)
-        mapView = findViewById(getViewId("mapView"))
+        setupViews()
 
         @SuppressLint("DiscouragedApi")
         val apiKey = getString(resources.getIdentifier("app_api_key", "string", packageName))
-        
+
         ArcGISEnvironment.apiKey = ApiKey.create(apiKey)
         ArcGISEnvironment.applicationContext = applicationContext
 
@@ -43,9 +106,20 @@ class MapActivity : AppCompatActivity() {
         val map = ArcGISMap(BasemapStyle.ArcGISNavigationNight)
         mapView.map = map
 
+        // create and add a map with a navigation night basemap style
+        /** mapView.apply {
+        // setViewpoint(Viewpoint(34.056295, -117.195800, 100000.0))
+        //  graphicsOverlays.add(graphicsOverlay)
+        }**/
+
+        // set MapView's geometry editor to sketch on map
+        mapView.geometryEditor = geometryEditor
+        mapView.apply {
+            graphicsOverlays.add(graphicsOverlay)
+        }
+
         // Set up the location display
         val locationDisplay = mapView.locationDisplay
-
         lifecycleScope.launch {
             // listen to changes in the status of the location data source
             locationDisplay.dataSource.start()
@@ -56,14 +130,200 @@ class MapActivity : AppCompatActivity() {
                     requestPermissions()
                 }
         }
+
+        setupListeners()
+    }
+
+    private fun setupListeners() {
+        recenterMap.setOnClickListener {
+            zoomToUserLocation()
+        }
+        tvCancel.setOnClickListener {
+            finish()
+        }
+        ivBack.setOnClickListener { onBackPressed() }
+
+        // Radio Polygon
+        radioPolygon.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                val selected: Int = getResourceId("ic_polygon_selected", "drawable")
+                radioPolygon.setCompoundDrawablesWithIntrinsicBounds(
+                    null,
+                    ContextCompat.getDrawable(this, selected),
+                    null,
+                    null
+                )
+                canStartDrawing(DRAW_POLYGON)
+            } else {
+                val unselected: Int = getResourceId("ic_polygon", "drawable")
+                radioPolygon.setCompoundDrawablesWithIntrinsicBounds(
+                    null,
+                    ContextCompat.getDrawable(this, unselected),
+                    null,
+                    null
+                )
+            }
+        }
+
+        // Radio Circle
+        radioCircle.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                val selected: Int = getResourceId("ic_circle_selected", "drawable")
+                radioCircle.setCompoundDrawablesWithIntrinsicBounds(
+                    null,
+                    ContextCompat.getDrawable(this, selected),
+                    null,
+                    null
+                )
+                canStartDrawing(DRAW_CIRCLE)
+            } else {
+                val unselected: Int = getResourceId("ic_circle", "drawable")
+                radioCircle.setCompoundDrawablesWithIntrinsicBounds(
+                    null,
+                    ContextCompat.getDrawable(this, unselected),
+                    null,
+                    null
+                )
+            }
+        }
+
+        // Radio Line
+        radioLine.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                val selected: Int = getResourceId("ic_line_selected", "drawable")
+                radioLine.setCompoundDrawablesWithIntrinsicBounds(
+                    null,
+                    ContextCompat.getDrawable(this, selected),
+                    null,
+                    null
+                )
+                canStartDrawing(DRAW_LINE)
+            } else {
+                val unselected: Int = getResourceId("ic_line", "drawable")
+                radioLine.setCompoundDrawablesWithIntrinsicBounds(
+                    null,
+                    ContextCompat.getDrawable(this, unselected),
+                    null,
+                    null
+                )
+            }
+        }
+
+        // Undo button clicked
+        btnUndo.setOnClickListener { clear() }
+        // Save button clicked
+        btnSave.setOnClickListener {
+            if (!isAnyRadioButtonSelected(radioGroup)) {
+                showMessage(getString(getResourceId("none_selected_message", "string")))
+            } else {
+                stopDrawingAndSave()
+            }
+        }
+    }
+
+    private fun isAnyRadioButtonSelected(radioGroup: RadioGroup): Boolean {
+        return radioGroup.checkedRadioButtonId != -1
+    }
+
+    private fun canStartDrawing(drawType: Int) {
+        //  disableRadioGroupWhileDrawing()
+
+        geometryEditor.apply {
+            when (drawType) {
+                DRAW_LINE -> {
+                    tool = vertexTool
+                    start(GeometryType.Polyline)
+                }
+                DRAW_POLYGON -> {
+                    tool = vertexTool
+                    start(GeometryType.Polygon)
+                }
+                DRAW_CIRCLE -> {
+                    tool = freehandTool
+                    start(GeometryType.Polyline)
+                }
+            }
+        }
+    }
+
+    private fun enableRadioGroupSaveRedoClicked() {
+        lifecycleScope.launch {
+            radioGroup.isEnabled = true
+            for (i in 0 until radioGroup.childCount) {
+                val child = radioGroup.getChildAt(i)
+                child.isEnabled = true
+            }
+            radioGroup.alpha = 1.0f
+        }
+    }
+
+    /**
+     * Clear the MapView of all the graphics and reset selections
+     */
+    private fun clear() {
+        // enableRadioGroupSaveRedoClicked()
+        graphicsOverlay.graphics.clear()
+        geometryEditor.clearGeometry()
+        geometryEditor.clearSelection()
+        geometryEditor.stop()
+        radioGroup.clearCheck()
+    }
+
+    private fun stopDrawingAndSave() {
+        // get the geometry from sketch editor
+        val sketchGeometry = geometryEditor.geometry.value
+            ?: return showMessage("Error retrieving geometry")
+
+        if (!GeometryBuilder.builder(sketchGeometry).isSketchValid) {
+            return reportNotValid()
+        }
+
+        // stops the editing session
+        geometryEditor.stop()
+
+        // clear the UI selection
+        radioGroup.clearCheck()
+
+        // create a graphic from the sketch editor geometry
+        val graphic = Graphic(sketchGeometry).apply {
+            // assign a symbol based on geometry type
+            symbol = when (sketchGeometry) {
+                is Polygon -> fillSymbol
+                is Polyline -> lineSymbol
+                is Point, is Multipoint -> pointSymbol
+                else -> null
+            }
+        }
+
+        // add the graphic to the graphics overlay
+        graphicsOverlay.graphics.add(graphic)
+    }
+
+    private fun setupViews() {
+        mapView = findViewById(getViewId("mapView"))
+        recenterMap = findViewById(getViewId("recenterMap"))
+        tvCancel = findViewById(getViewId("tvCancel"))
+        ivBack = findViewById(getViewId("ivBack"))
+        radioGroup = findViewById(getViewId("radioGroup"))
+        radioPolygon = findViewById(getViewId("radioPolygon"))
+        radioLine = findViewById(getViewId("radioLine"))
+        radioCircle = findViewById(getViewId("radioCircle"))
+        btnUndo = findViewById(getViewId("btnUndo"))
+        btnSave = findViewById(getViewId("btnSave"))
     }
 
     /**
      * Request fine and coarse location permissions for API level 23+.
      */
     private fun requestPermissions() {
-        val permissionCheckCoarseLocation = ContextCompat.checkSelfPermission(this, ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val permissionCheckFineLocation = ContextCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val permissionCheckCoarseLocation = ContextCompat.checkSelfPermission(
+            this,
+            ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val permissionCheckFineLocation = ContextCompat.checkSelfPermission(
+            this,
+            ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
 
         if (!(permissionCheckCoarseLocation && permissionCheckFineLocation)) {
             ActivityCompat.requestPermissions(
@@ -76,7 +336,7 @@ class MapActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 mapView.locationDisplay.dataSource.start().onSuccess {
                     zoomToUserLocation()
-                   // activityMainBinding.spinner.setSelection(1, true)
+                    // activityMainBinding.spinner.setSelection(1, true)
                 }
             }
         }
@@ -92,7 +352,7 @@ class MapActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 mapView.locationDisplay.dataSource.start().onSuccess {
                     zoomToUserLocation()
-                  //  activityMainBinding.spinner.setSelection(1, true)
+                    //  activityMainBinding.spinner.setSelection(1, true)
                 }
             }
         } else {
@@ -102,7 +362,7 @@ class MapActivity : AppCompatActivity() {
                 Snackbar.LENGTH_LONG
             ).show()
             // update UI to reflect that the location display did not actually start
-           // activityMainBinding.spinner.setSelection(0, true)
+            // activityMainBinding.spinner.setSelection(0, true)
         }
     }
 
@@ -122,7 +382,27 @@ class MapActivity : AppCompatActivity() {
         return getResourceId(viewName, "id")
     }
 
+    private fun showMessage(message: String) {
+        Log.e(localClassName, message)
+        Snackbar.make(mapView, message, Snackbar.LENGTH_SHORT).show()
+    }
+
+    private fun reportNotValid() {
+        // get the geometry currently being added to map
+        val geometry = geometryEditor.geometry.value ?: return showMessage("Geometry not found")
+        val validIfText: String = when (geometry) {
+            is Polyline -> getString(getResourceId("invalid_polyline_message", "string"))
+            is Polygon -> getString(getResourceId("invalid_polygon_message", "string"))
+            else -> getString(getResourceId("none_selected_message", "string"))
+        }
+        // set the invalid message to the TextView.
+        showMessage(validIfText)
+    }
+
     companion object {
+        private const val DRAW_POLYGON = 1
+        private const val DRAW_CIRCLE = 2
+        private const val DRAW_LINE = 3
         private const val REQUEST_CODE_PERMISSION = 2
     }
 }
