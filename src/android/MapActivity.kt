@@ -18,11 +18,11 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.arcgismaps.ApiKey
 import com.arcgismaps.ArcGISEnvironment
+import com.arcgismaps.LoadStatus
 import com.arcgismaps.geometry.*
 import com.arcgismaps.location.LocationDisplayAutoPanMode
 import com.arcgismaps.mapping.ArcGISMap
 import com.arcgismaps.mapping.BasemapStyle
-import com.arcgismaps.mapping.Viewpoint
 import com.arcgismaps.mapping.symbology.*
 import com.arcgismaps.mapping.view.Graphic
 import com.arcgismaps.mapping.view.GraphicsOverlay
@@ -31,6 +31,7 @@ import com.arcgismaps.mapping.view.geometryeditor.FreehandTool
 import com.arcgismaps.mapping.view.geometryeditor.GeometryEditor
 import com.arcgismaps.mapping.view.geometryeditor.VertexTool
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.*
 
@@ -86,6 +87,8 @@ class MapActivity : AppCompatActivity() {
     // keep the instance to create new geometries, and change existing geometries
     private var geometryEditor: GeometryEditor = GeometryEditor()
 
+    private val databaseHelper: DatabaseHelper by lazy { DatabaseHelper(this) }
+
     @SuppressLint("DiscouragedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,12 +108,6 @@ class MapActivity : AppCompatActivity() {
         // create and add a map with a navigation night basemap style
         val map = ArcGISMap(BasemapStyle.ArcGISNavigationNight)
         mapView.map = map
-
-        // create and add a map with a navigation night basemap style
-        /** mapView.apply {
-        // setViewpoint(Viewpoint(34.056295, -117.195800, 100000.0))
-        //  graphicsOverlays.add(graphicsOverlay)
-        }**/
 
         // set MapView's geometry editor to sketch on map
         mapView.geometryEditor = geometryEditor
@@ -135,12 +132,8 @@ class MapActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        recenterMap.setOnClickListener {
-            zoomToUserLocation()
-        }
-        tvCancel.setOnClickListener {
-            finish()
-        }
+        recenterMap.setOnClickListener { zoomToUserLocation() }
+        tvCancel.setOnClickListener { finish() }
         ivBack.setOnClickListener { onBackPressed() }
 
         // Radio Polygon
@@ -210,7 +203,14 @@ class MapActivity : AppCompatActivity() {
         }
 
         // Undo button clicked
-        btnUndo.setOnClickListener { clear() }
+        btnUndo.setOnClickListener {
+            // TODO display a pop-up to confirm DELETE ALL graph
+            clear()
+
+            lifecycleScope.launch {
+                databaseHelper.deleteAllGraphics()
+            }
+        }
         // Save button clicked
         btnSave.setOnClickListener {
             if (!isAnyRadioButtonSelected(radioGroup)) {
@@ -218,6 +218,49 @@ class MapActivity : AppCompatActivity() {
             } else {
                 stopDrawingAndSave()
             }
+        }
+
+        afterMapLoaded()
+    }
+
+    private fun afterMapLoaded() {
+        lifecycleScope.launch {
+            mapView.map?.loadStatus?.collectLatest {
+                when(it) {
+                    LoadStatus.Loaded ->  {
+                        setupLoadedDraw()
+                    }
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    private fun setupLoadedDraw() {
+        try {
+            val symbolJson = databaseHelper.getAllGraphics()
+            if (symbolJson.isNotEmpty()) {
+                symbolJson.forEach {
+                    val geometry = Geometry.fromJsonOrNull(it)
+
+                    if (geometry != null) {
+                        geometryEditor.start(geometry)
+                        val graphic = Graphic(geometry).apply {
+                            // assign a symbol based on geometry type
+                            symbol = when (geometry) {
+                                is Polygon -> fillSymbol
+                                is Polyline -> lineSymbol
+                                is Point, is Multipoint -> pointSymbol
+                                else -> null
+                            }
+                        }
+                        graphicsOverlay.graphics.add(graphic)
+                        geometryEditor.stop()
+                    }
+                }
+            }
+        } catch (ex: Exception) {
+            showMessage("Error to retrieve the geometry saved!")
         }
     }
 
@@ -261,7 +304,6 @@ class MapActivity : AppCompatActivity() {
      * Clear the MapView of all the graphics and reset selections
      */
     private fun clear() {
-        // enableRadioGroupSaveRedoClicked()
         graphicsOverlay.graphics.clear()
         geometryEditor.clearGeometry()
         geometryEditor.clearSelection()
@@ -283,7 +325,6 @@ class MapActivity : AppCompatActivity() {
 
         // clear the UI selection
         radioGroup.clearCheck()
-
         // create a graphic from the sketch editor geometry
         val graphic = Graphic(sketchGeometry).apply {
             // assign a symbol based on geometry type
@@ -297,6 +338,10 @@ class MapActivity : AppCompatActivity() {
 
         // add the graphic to the graphics overlay
         graphicsOverlay.graphics.add(graphic)
+
+        // save in data helper
+        val json = sketchGeometry.toJson()
+        databaseHelper.saveGraphicJson(json)
     }
 
     private fun setupViews() {
@@ -332,11 +377,9 @@ class MapActivity : AppCompatActivity() {
                 REQUEST_CODE_PERMISSION
             )
         } else {
-            // permission already granted, so start the location display
             lifecycleScope.launch {
                 mapView.locationDisplay.dataSource.start().onSuccess {
                     zoomToUserLocation()
-                    // activityMainBinding.spinner.setSelection(1, true)
                 }
             }
         }
@@ -352,7 +395,6 @@ class MapActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 mapView.locationDisplay.dataSource.start().onSuccess {
                     zoomToUserLocation()
-                    //  activityMainBinding.spinner.setSelection(1, true)
                 }
             }
         } else {
@@ -361,14 +403,11 @@ class MapActivity : AppCompatActivity() {
                 "Location permissions required to run this sample!",
                 Snackbar.LENGTH_LONG
             ).show()
-            // update UI to reflect that the location display did not actually start
-            // activityMainBinding.spinner.setSelection(0, true)
         }
     }
 
     private fun zoomToUserLocation() {
         if (this::mapView.isInitialized) {
-            Log.v("TAG", "✅ -- Setting the user LocationDisplayAutoPanMode.Recenter")
             mapView.locationDisplay.setAutoPanMode(LocationDisplayAutoPanMode.Recenter)
         }
     }
