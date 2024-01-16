@@ -31,7 +31,9 @@
 		<source-file src="src/android/ArcGISPlugin.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/arcgis" />
         <source-file src="src/android/DatabaseHelper.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/arcgis" />
         <source-file src="src/android/MapActivity.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/arcgis" />
+        <source-file src="src/android/DownloadMapActivity.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/arcgis" />
         <resource-file src="src/android/layout/activity_map.xml" target="res/layout/activity_map.xml" />
+        <resource-file src="src/android/layout/activity_download_map.xml" target="res/layout/activity_download_map.xml" />
 
         <!-- Font Popins Regular -->
         <resource-file src="src/android/font/poppins_regular.ttf" target="res/font/poppins_regular.ttf" />
@@ -47,6 +49,7 @@
         <resource-file src="src/android/icons/ic_polygon_selected.xml" target="res/drawable/ic_polygon_selected.xml" />
         <resource-file src="src/android/icons/ic_recenter.xml" target="res/drawable/ic_recenter.xml" />
         <resource-file src="src/android/icons/ic_close_map.xml" target="res/drawable/ic_close_map.xml" />
+        <resource-file src="src/android/icons/ic_download.xml" target="res/drawable/ic_download.xml" />
         <!-- end copy filed -->
 
         <!-- SDK Files -->
@@ -80,6 +83,8 @@
             <string name="invalid_polygon_message">Polygon only valid if it contains at least one part of 3 or more vertices which form a closed ring.</string>
             <string name="none_selected_message">No option selected to draw in map</string>
             <string name="restart_message">Cleared all graphics from map</string>
+            <string name="take_map_offline">Download Map</string>
+            <string name="reset_map">Reset Map</string>
         </config-file>
         <!-- End Variables -->
 
@@ -88,6 +93,9 @@
             <activity
                 android:theme="@style/Theme.AppCompat.NoActionBar"
                 android:name="com.outsystems.experts.arcgis.MapActivity" />
+            <activity
+                android:name="com.outsystems.experts.arcgis.DownloadMapActivity"
+                android:theme="@style/Theme.AppCompat.NoActionBar" />
         </config-file>
         <!-- End register Activity -->
 

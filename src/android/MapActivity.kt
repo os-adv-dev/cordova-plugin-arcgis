@@ -3,6 +3,8 @@ package com.outsystems.experts.arcgis
 import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
@@ -12,9 +14,13 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.arcgismaps.ApiKey
 import com.arcgismaps.ArcGISEnvironment
@@ -23,6 +29,7 @@ import com.arcgismaps.geometry.*
 import com.arcgismaps.location.LocationDisplayAutoPanMode
 import com.arcgismaps.mapping.ArcGISMap
 import com.arcgismaps.mapping.BasemapStyle
+import com.arcgismaps.mapping.MobileMapPackage
 import com.arcgismaps.mapping.symbology.*
 import com.arcgismaps.mapping.view.Graphic
 import com.arcgismaps.mapping.view.GraphicsOverlay
@@ -33,6 +40,7 @@ import com.arcgismaps.mapping.view.geometryeditor.VertexTool
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.*
 
 class MapActivity : AppCompatActivity() {
@@ -41,6 +49,7 @@ class MapActivity : AppCompatActivity() {
     private lateinit var recenterMap: ImageView
     private lateinit var tvCancel: View
     private lateinit var ivBack: View
+    private lateinit var downloadButton: ImageView
     private lateinit var radioGroup: RadioGroup
     private lateinit var radioPolygon: RadioButton
     private lateinit var radioCircle: RadioButton
@@ -75,6 +84,11 @@ class MapActivity : AppCompatActivity() {
         )
     }
 
+    // file path to store the offline map package
+    private val offlineMapPath by lazy {
+        getExternalFilesDir(null)?.path + "/offlineMap"
+    }
+
     // keep the instance graphic overlay to add graphics on the map
     private var graphicsOverlay: GraphicsOverlay = GraphicsOverlay()
 
@@ -105,19 +119,36 @@ class MapActivity : AppCompatActivity() {
 
         lifecycle.addObserver(mapView)
 
-        // create and add a map with a navigation night basemap style
-        val map = ArcGISMap(BasemapStyle.ArcGISNavigationNight)
-        mapView.map = map
+        // Load Map online or offline
+        loadMapBasedOnConnectivity()
 
-        // set MapView's geometry editor to sketch on map
-        mapView.geometryEditor = geometryEditor
         mapView.apply {
             graphicsOverlays.add(graphicsOverlay)
         }
 
-        // Set up the location display
-        val locationDisplay = mapView.locationDisplay
+        setupListeners()
+    }
+
+    private fun loadMapBasedOnConnectivity() {
+        if (isNetworkAvailable()) {
+            loadOnlineMap()
+        } else {
+            loadOfflineMap()
+        }
+    }
+
+    private fun loadOnlineMap() {
+        showDownloadButton(isVisible = true)
+
         lifecycleScope.launch {
+            val map = ArcGISMap(BasemapStyle.ArcGISNavigationNight)
+            mapView.map = map
+
+            // set MapView's geometry editor to sketch on map
+            mapView.geometryEditor = geometryEditor
+
+            // Set up the location display
+            val locationDisplay = mapView.locationDisplay
             // listen to changes in the status of the location data source
             locationDisplay.dataSource.start()
                 .onSuccess {
@@ -127,14 +158,44 @@ class MapActivity : AppCompatActivity() {
                     requestPermissions()
                 }
         }
+    }
 
-        setupListeners()
+    private fun loadOfflineMap() {
+        showDownloadButton(isVisible = false)
+        lifecycleScope.launch {
+            // check if the offline map package file exists
+            if (File(offlineMapPath).exists()) {
+                Log.v("TAG", ">>>> Offline Map EXISTS -->>> $offlineMapPath")
+
+                // load it as a MobileMapPackage
+                val mapPackage = MobileMapPackage(offlineMapPath)
+                mapPackage.load().onFailure {
+                    // if the load fails, show an error and return
+                    showMessage("Error loading map package: ${it.message}")
+                    return@launch
+                }
+                // add the map from the mobile map package to the MapView
+                mapView.map = mapPackage.maps.first()
+                // clear all the drawn graphics
+                graphicsOverlay.graphics.clear()
+
+                // set MapView's geometry editor to sketch on map
+                mapView.geometryEditor = geometryEditor
+
+                // Load Draw in offline map
+                setupLoadedDraw()
+
+            } else {
+                Log.v("TAG", ">>>> Offline Map NO EXISTS -->>> $offlineMapPath")
+            }
+        }
     }
 
     private fun setupListeners() {
         recenterMap.setOnClickListener { zoomToUserLocation() }
         tvCancel.setOnClickListener { finish() }
         ivBack.setOnClickListener { onBackPressed() }
+        downloadButton.setOnClickListener { startActivity(Intent(this, DownloadMapActivity::class.java)) }
 
         // Radio Polygon
         radioPolygon.setOnCheckedChangeListener { _, isChecked ->
@@ -355,6 +416,7 @@ class MapActivity : AppCompatActivity() {
         radioCircle = findViewById(getViewId("radioCircle"))
         btnUndo = findViewById(getViewId("btnUndo"))
         btnSave = findViewById(getViewId("btnSave"))
+        downloadButton = findViewById(getViewId("downloadButton"))
     }
 
     /**
@@ -426,6 +488,10 @@ class MapActivity : AppCompatActivity() {
         Snackbar.make(mapView, message, Snackbar.LENGTH_SHORT).show()
     }
 
+    private fun showDownloadButton(isVisible: Boolean) {
+        downloadButton.isVisible = isVisible
+    }
+
     private fun reportNotValid() {
         // get the geometry currently being added to map
         val geometry = geometryEditor.geometry.value ?: return showMessage("Geometry not found")
@@ -443,5 +509,17 @@ class MapActivity : AppCompatActivity() {
         private const val DRAW_CIRCLE = 2
         private const val DRAW_LINE = 3
         private const val REQUEST_CODE_PERMISSION = 2
+    }
+}
+
+fun Context.isNetworkAvailable(): Boolean {
+    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    } else {
+        val networkInfo = connectivityManager.activeNetworkInfo ?: return false
+        return networkInfo.isConnected
     }
 }
