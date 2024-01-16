@@ -191,10 +191,7 @@ class DownloadMapActivity : AppCompatActivity() {
             offlineMapJob.progress.collect {
                 // display the current job's progress value
                 val progressPercentage = offlineMapJob.progress.value
-                Log.v("TAG", ">>>> Percentage: $progressPercentage")
                 progressDialog.setMessage("Downloading...$progressPercentage%")
-              //  progressDialogLayout.progressBar.progress = progressPercentage
-                // progressDialogLayout.progressTextView.text = "$progressPercentage%"
             }
         }
 
@@ -207,14 +204,13 @@ class DownloadMapActivity : AppCompatActivity() {
             takeMapOfflineButton.isEnabled = false
             resetButton.isEnabled = true
 
-            showMessage("Map saved at: " + offlineMapJob.downloadDirectoryPath)
-
+            showMessage("Map saved with success!")
 
             // close the progress dialog
             progressDialog.dismiss()
         }.onFailure {
             progressDialog.dismiss()
-            showMessage(it.message.toString())
+            showMessage("Select a smaller area to download the map")
         }
     }
 
